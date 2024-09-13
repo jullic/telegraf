@@ -1,6 +1,7 @@
 import { Middleware, MiddlewareFn } from '../middleware'
 import Composer from '../composer'
 import Context from '../context'
+import { MessageTypes } from '../telegram-types'
 
 const { compose } = Composer
 
@@ -16,14 +17,27 @@ export class BaseScene<C extends Context = Context> extends Composer<C> {
   ttl?: number
   enterHandler: MiddlewareFn<C>
   leaveHandler: MiddlewareFn<C>
-  constructor(id: string, options?: SceneOptions<C>) {
-    const opts: SceneOptions<C> = {
+  globalListeners?: Partial<Record<MessageTypes, boolean>>
+
+  constructor(
+    id: string,
+    options?: SceneOptions<C>,
+    globalListeners?: Partial<Record<MessageTypes, boolean>>
+  ) {
+    const opts: SceneOptions<C> & {
+      globalListeners?: Partial<Record<MessageTypes, boolean>>
+    } = {
       handlers: [],
       enterHandlers: [],
       leaveHandlers: [],
       ...options,
+      globalListeners: {
+        callback_query: true,
+        ...globalListeners,
+      },
     }
     super(...opts.handlers)
+    this.globalListeners = opts.globalListeners
     this.id = id
     this.ttl = opts.ttl
     this.enterHandler = compose(opts.enterHandlers)

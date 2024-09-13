@@ -12,10 +12,12 @@ import {
   InputMediaVideo,
 } from './core/types/typegram'
 
-import { UnionKeys } from './core/helpers/deunionize'
+import { Deunionize, UnionKeys } from './core/helpers/deunionize'
 import { FmtString } from './format'
 
 export { Markup } from './markup'
+
+export type MessageTypes = Extract<UnionKeys<Deunionize<Update>>, UpdateType>
 
 // tiny helper types
 export type ChatAction = Opts<'sendChatAction'>['action']

@@ -7,6 +7,7 @@ import SceneContextScene, {
 import { BaseScene } from './base'
 import { Composer } from '../composer'
 import { Context } from '../context'
+import { MessageTypes } from '../telegram-types'
 
 export class Stage<
   C extends SessionContext<SceneSession<D>> & {
@@ -16,12 +17,15 @@ export class Stage<
 > extends Composer<C> {
   options: Partial<SceneContextSceneOptions<D>>
   scenes: Map<string, BaseScene<C>>
+  private readonly globalListeners: Partial<Record<MessageTypes, boolean>>
 
   constructor(
-    scenes: ReadonlyArray<BaseScene<C>> = [],
-    options?: Partial<SceneContextSceneOptions<D>>
+    scenes: ReadonlyArray<BaseScene<C>>,
+    options?: Partial<SceneContextSceneOptions<D>>,
+    globalListeners?: Partial<Record<MessageTypes, boolean>>
   ) {
     super()
+    this.globalListeners = { callback_query: true, ...globalListeners }
     this.options = { ...options }
     this.scenes = new Map<string, BaseScene<C>>()
     scenes.forEach((scene) => this.register(scene))
@@ -46,7 +50,20 @@ export class Stage<
         return next()
       },
       super.middleware(),
-      Composer.lazy<C>((ctx) => ctx.scene.current ?? Composer.passThru()),
+      Composer.lazy<C>((ctx) => {
+        const updateType = ctx.updateType
+        const suitableScenes = [...this.scenes.values()]
+          .filter((item) => item.id !== ctx.scene.current?.id)
+          .filter(
+            (item) =>
+              item.globalListeners?.[updateType] ??
+              this.globalListeners[updateType]
+          )
+
+        const current = ctx.scene.current ? [ctx.scene.current] : []
+        const composed = Composer.compose([...current, ...suitableScenes])
+        return composed.length ? composed : Composer.passThru()
+      }),
     ])
     return Composer.optional(isSessionContext, handler)
   }
