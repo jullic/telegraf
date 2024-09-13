@@ -20,7 +20,7 @@ export class Stage<
   private readonly globalListeners: Partial<Record<MessageTypes, boolean>>
 
   constructor(
-    scenes: ReadonlyArray<BaseScene<C>>,
+    scenes: ReadonlyArray<BaseScene<C>> = [],
     options?: Partial<SceneContextSceneOptions<D>>,
     globalListeners?: Partial<Record<MessageTypes, boolean>>
   ) {
